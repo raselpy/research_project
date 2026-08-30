@@ -1,0 +1,5 @@
+defaults:
+  - brats2024_dataset_schema
+
+path: data/raw/BraTS2024_small_dataset
+num_workers: 4

@@ -1,0 +1,5 @@
+# @package _global_
+# Baseline experiment: no overrides on top of the schema defaults.
+# Ablation variants (ablation_region, ablation_dataug, ablation_batchnorm, ...)
+# are added here in Phase 9, each overriding specific dataset/model/training
+# fields at the root config level (hence @package _global_).

@@ -1,0 +1,10 @@
+defaults:
+  - _self_
+  - dataset: brats2024
+  - model: nnunet3d
+  - training: nnunet_baseline
+  - logging: default
+  - experiment: baseline
+
+experiment_name: "brats_nnunet_runs"
+seed: 42
