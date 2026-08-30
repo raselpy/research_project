@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Environment
+.env
+
+# Data — DVC-tracked once Phase 3 runs `dvc add`, not Git-tracked
+data/raw/
+data/processed/
+
+# Run outputs (checkpoints, mlflow store) — large/binary, not Git-tracked
+mlruns/
+results/checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db

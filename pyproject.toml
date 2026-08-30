@@ -1,0 +1,32 @@
+[project]
+name = "research_project"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "hydra-core>=1.3",
+    "omegaconf>=2.3",
+    "pydantic>=2.0",
+    "torch",
+    "dvc",
+    "mlflow",
+    "dagshub",
+    "medpy",           # correct HD95 (Phase 3, 4.4)
+    "batchgenerators", # real BraTS augmentation (Phase 4, 5.1)
+    "scikit-learn",    # deterministic KFold splitting (Phase 8, 9.1) + LogisticRegression (Phase 10, 13.3)
+    "pandas",          # per-case score tables + ranking (Phase 8, 9.3)
+    "scipy",           # Spearman correlation for rank stability (Phase 11, 13.1)
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov", "ruff", "black", "mypy"]
+
+[project.scripts]
+train = "src.training.run:main"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
