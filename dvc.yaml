@@ -1,0 +1,37 @@
+stages:
+  prepare_data:
+    # NOTE: hardcoded, not Hydra-interpolated — DVC's own ${...} templating
+    # reads from a separate params.yaml/vars: mechanism, not Hydra's
+    # configs/dataset/brats2024.yaml. `dvc dag` fails outright on
+    # ${dataset.path} since DVC has no idea what that key means. Keep this
+    # in sync with configs/dataset/brats2024.yaml's `path:` value manually
+    # until prepare.py is refactored to take its path from Hydra directly.
+    cmd: python -m src.datasets.prepare --path data/raw/BraTS2024_small_dataset
+    deps:
+      - src/datasets/prepare.py
+      - configs/dataset/brats2024.yaml
+    outs:
+      - data/processed
+
+  train:
+    cmd: python -m src.training.run
+    deps:
+      - data/processed
+      - src/training/run.py
+      - src/training/losses.py
+      - src/models/nnunet3d.py
+      - configs
+    outs:
+      - results/checkpoints
+    metrics:
+      - results/tables/train_metrics.json:
+          cache: false
+
+  evaluate:
+    cmd: python -m src.evaluation.run --checkpoint results/checkpoints/latest.pt
+    deps:
+      - results/checkpoints
+      - src/evaluation/run.py
+      - src/evaluation/metrics.py
+    outs:
+      - results/tables/eval_results.json

@@ -10,11 +10,12 @@ dependencies = [
     "dvc",
     "mlflow",
     "dagshub",
-    "medpy",           # correct HD95 (Phase 3, 4.4)
-    "batchgenerators", # real BraTS augmentation (Phase 4, 5.1)
-    "scikit-learn",    # deterministic KFold splitting (Phase 8, 9.1) + LogisticRegression (Phase 10, 13.3)
-    "pandas",          # per-case score tables + ranking (Phase 8, 9.3)
-    "scipy",           # Spearman correlation for rank stability (Phase 11, 13.1)
+    "medpy",           # correct HD95 (Phase 3, 3.4)
+    "nibabel",         # reads raw .nii volumes (Phase 3, 3.2) — needed but not in the original list
+    "batchgenerators", # real BraTS augmentation (Phase 4, 4.1)
+    "scikit-learn",    # deterministic KFold splitting (Phase 8, 8.1) + LogisticRegression (Phase 10, 10.3)
+    "pandas",          # per-case score tables + ranking (Phase 8, 8.3)
+    "scipy",           # Spearman correlation for rank stability (Phase 11, 11.1)
 ]
 
 [project.optional-dependencies]
