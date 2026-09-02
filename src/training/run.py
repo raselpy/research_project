@@ -3,9 +3,9 @@ CLI convention: Hydra's key=value overrides (train training.epochs=1 ...),
 not argparse — matches Phase 8's cv.py, which calls this via subprocess
 with dataset.fold=0-style overrides.
 """
+
 import csv
 from pathlib import Path
-from typing import List, Tuple
 
 import hydra
 import numpy as np
@@ -14,21 +14,21 @@ from omegaconf import DictConfig
 
 from src.config_schema import setup_config
 from src.logging_utils.setup import get_logger
+from src.tracking.mlflow_utils import init_mlflow, log_epoch_metrics, tracked_run
 from src.training.augmentation import build_augmentation
 from src.training.losses import DeepSupervisionWrapper, build_loss
-from src.tracking.mlflow_utils import init_mlflow, log_epoch_metrics, tracked_run
 
 logger = get_logger(__name__)
 setup_config()  # must register structured configs before @hydra.main composes
 
 
-def load_case_ids(manifest_path: Path) -> List[str]:
+def load_case_ids(manifest_path: Path) -> list[str]:
     with open(manifest_path, newline="") as f:
         reader = csv.DictReader(f)
         return [row["case_id"] for row in reader]
 
 
-def _random_crop(volume: np.ndarray, patch_size: Tuple[int, int, int], rng: np.random.Generator) -> np.ndarray:
+def _random_crop(volume: np.ndarray, patch_size: tuple[int, int, int], rng: np.random.Generator) -> np.ndarray:
     spatial_shape = volume.shape[1:]
     starts = [int(rng.integers(0, max(dim - p + 1, 1))) for dim, p in zip(spatial_shape, patch_size)]
     slices = tuple(slice(s, s + p) for s, p in zip(starts, patch_size))
@@ -104,8 +104,12 @@ class Trainer:
                 epoch_losses = []
                 for _ in range(self.cfg.training.iterations_per_epoch):
                     data, seg = load_batch(
-                        self.train_case_ids, self.processed_dir, tuple(self.cfg.model.patch_size),
-                        self.cfg.training.batch_size, self.augmentation, self.rng,
+                        self.train_case_ids,
+                        self.processed_dir,
+                        tuple(self.cfg.model.patch_size),
+                        self.cfg.training.batch_size,
+                        self.augmentation,
+                        self.rng,
                     )
                     data, seg = data.to(self.device), seg.to(self.device)
                     self.optimizer.zero_grad()
@@ -126,6 +130,7 @@ class Trainer:
 
 def main() -> None:
     import sys
+
     from hydra import compose, initialize_config_dir
     from hydra.core.global_hydra import GlobalHydra
 

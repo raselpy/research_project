@@ -4,6 +4,7 @@ stub. Three presets, selected by TrainingConfig.augmentation_preset:
 'DA' (more aggressive, Section 2.4), and 'DA_star' (DA with per-channel
 brightness instead of per-sample).
 """
+
 from batchgenerators.transforms.abstract_transforms import Compose
 from batchgenerators.transforms.color_transforms import BrightnessTransform, GammaTransform
 from batchgenerators.transforms.spatial_transforms import SpatialTransform
@@ -37,7 +38,7 @@ def build_augmentation(preset: str, patch_size=None) -> Compose:
         ),
     ]
     if brightness_p > 0:
-        per_channel = (preset == "DA_star")
+        per_channel = preset == "DA_star"
         transforms.append(
             BrightnessTransform(
                 mu=0.0,

@@ -5,13 +5,14 @@ evaluation/run.py, ...).
 Idempotent: calling setup_logging() more than once (e.g. once per module
 that imports it) does not add duplicate handlers to the same logger.
 """
+
 import logging
 import logging.handlers
 from pathlib import Path
-from typing import Optional
 
 try:
     from rich.logging import RichHandler
+
     _HAS_RICH = True
 except ImportError:
     _HAS_RICH = False

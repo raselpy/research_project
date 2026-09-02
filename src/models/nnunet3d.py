@@ -1,10 +1,18 @@
 """3D U-Net matching nnU-Net's generated architecture for BraTS (Fig. 1,
 Section 2.2 of Isensee et al., arXiv:2011.00848).
+
+Encoder/decoder with skip connections. Downsampling via strided
+convolutions (stride 2 on the first conv of each encoder stage after the
+first). Upsampling via ConvTranspose3d. Deep supervision heads branch off
+at all but the two lowest resolutions in the decoder (Fig. 1 caption).
+InstanceNorm3d/BatchNorm3d switch (BN ablation, Section 2.4). Softmax/
+sigmoid output switch (region-based training ablation, Section 2.3).
 """
-from typing import List
+
+from collections.abc import Sequence
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 def _norm_layer(norm_type: str, num_channels: int) -> nn.Module:
@@ -16,9 +24,18 @@ def _norm_layer(norm_type: str, num_channels: int) -> nn.Module:
 
 
 class ConvNormLReLU(nn.Module):
+    """3x3x3 conv - Norm - LeakyReLU, per Fig. 1's basic block."""
+
     def __init__(self, in_ch: int, out_ch: int, stride: int, norm_type: str):
         super().__init__()
-        self.conv = nn.Conv3d(in_ch, out_ch, kernel_size=3, stride=stride, padding=1, bias=(norm_type != "batch"))
+        self.conv = nn.Conv3d(
+            in_ch,
+            out_ch,
+            kernel_size=3,
+            stride=stride,
+            padding=1,
+            bias=(norm_type != "batch"),
+        )
         self.norm = _norm_layer(norm_type, out_ch)
         self.act = nn.LeakyReLU(negative_slope=1e-2, inplace=True)
 
@@ -27,6 +44,10 @@ class ConvNormLReLU(nn.Module):
 
 
 class StackedConvBlock(nn.Module):
+    """Two ConvNormLReLU blocks. `stride` (2 for downsampling, 1 otherwise)
+    is applied on the first conv only, as nnU-Net performs downsampling via
+    strided convolutions rather than pooling."""
+
     def __init__(self, in_ch: int, out_ch: int, stride: int, norm_type: str):
         super().__init__()
         self.block = nn.Sequential(
@@ -39,6 +60,10 @@ class StackedConvBlock(nn.Module):
 
 
 class SegmentationHead(nn.Module):
+    """1x1x1 conv - softmax/sigmoid, per Fig. 1's output block. Sigmoid is
+    used for region-based training (Section 2.3), softmax for the standard
+    3-class (edema/necrosis/enhancing) formulation."""
+
     def __init__(self, in_ch: int, num_classes: int, region_based: bool):
         super().__init__()
         self.conv = nn.Conv3d(in_ch, num_classes, kernel_size=1)
@@ -50,11 +75,15 @@ class SegmentationHead(nn.Module):
 
 
 class NNUNet3D(nn.Module):
+    """Full encoder/decoder. Constructor args mirror
+    `Nnunet3DModelSchema` field-for-field so it can be instantiated via
+    Hydra's `_target_` instantiation."""
+
     def __init__(
         self,
-        patch_size: List[int] = (128, 128, 128),
+        patch_size: Sequence[int] = (128, 128, 128),
         in_channels: int = 4,
-        num_classes: int = 4,
+        num_classes: int = 4,  # background + 3 foreground classes (NCR/ED/ET) — see model_schema.py's comment
         base_num_features: int = 32,
         max_num_features: int = 320,
         num_downsampling: int = 5,
@@ -63,21 +92,24 @@ class NNUNet3D(nn.Module):
         region_based_training: bool = False,
         batch_dice: bool = False,  # consumed by the loss, not the architecture; accepted for schema parity
         dropout: float = 0.1,
-        pretrained_path: str = None,
-        **_ignored,  # tolerate extra schema fields from Hydra instantiation
+        pretrained_path: str | None = None,
+        **_ignored,  # tolerate extra schema fields (architecture, name, _target_, ...) from Hydra instantiation
     ):
         super().__init__()
 
-        # guard: bottleneck must not collapse below a sane spatial size
+        # --- guard: bottleneck must not collapse below a sane spatial size ---
+        # Hit as a real bug during testing: with too many downsampling ops
+        # relative to patch_size, a spatial dim reaches 1 (or isn't evenly
+        # divisible), which breaks the stride-2 conv/InstanceNorm3d chain.
         min_bottleneck_dim = 4
         for dim in patch_size:
-            if dim % (2 ** num_downsampling) != 0:
+            if dim % (2**num_downsampling) != 0:
                 raise ValueError(
                     f"patch_size dim {dim} is not evenly divisible by "
                     f"2**num_downsampling ({2 ** num_downsampling}); "
                     f"choose a patch_size that is a multiple of {2 ** num_downsampling}."
                 )
-            bottleneck_dim = dim // (2 ** num_downsampling)
+            bottleneck_dim = dim // (2**num_downsampling)
             if bottleneck_dim < min_bottleneck_dim:
                 raise ValueError(
                     f"patch_size {tuple(patch_size)} with num_downsampling="
@@ -91,10 +123,11 @@ class NNUNet3D(nn.Module):
         self.region_based_training = region_based_training
         self.dropout_p = dropout
 
+        # channels per resolution level: 32, 64, 128, 256, 320, 320, ... (capped)
         num_stages = num_downsampling + 1
-        self.features = [min(base_num_features * (2 ** i), max_num_features) for i in range(num_stages)]
+        self.features = [min(base_num_features * (2**i), max_num_features) for i in range(num_stages)]
 
-        # encoder
+        # --- encoder ---
         self.encoder_stages = nn.ModuleList()
         in_ch = in_channels
         for i, out_ch in enumerate(self.features):
@@ -103,7 +136,9 @@ class NNUNet3D(nn.Module):
             in_ch = out_ch
         self.dropout = nn.Dropout3d(p=dropout) if dropout > 0 else nn.Identity()
 
-        # decoder
+        # --- decoder ---
+        # decoder_stages[0] is the lowest-resolution upsample (out of the
+        # bottleneck), decoder_stages[-1] is full input resolution.
         self.upsamples = nn.ModuleList()
         self.decoder_stages = nn.ModuleList()
         decoder_in = self.features[-1]
@@ -113,17 +148,26 @@ class NNUNet3D(nn.Module):
             self.decoder_stages.append(StackedConvBlock(skip_ch * 2, skip_ch, stride=1, norm_type=norm_type))
             decoder_in = skip_ch
 
-        # deep supervision heads: decoder_stages[i] (0-based, i=0 is the
-        # lowest-resolution upsample out of the bottleneck) produces
-        # features[num_downsampling-1-i] channels. Branch off at all but
-        # the two lowest decoder resolutions -> skip i=0,1.
+        # --- deep supervision heads ---
+        # decoder_stages[i] (0-based, i=0 is the lowest-resolution upsample
+        # out of the bottleneck) produces `features[num_downsampling-1-i]`
+        # channels. Branch off at all but the two lowest decoder
+        # resolutions (Fig. 1 caption) -> skip i=0,1. The last index
+        # (i=num_downsampling-1) is always included here and is the
+        # full-resolution main output.
         self.heads = nn.ModuleDict()
         for i in range(2, num_downsampling):
             self.heads[str(i)] = SegmentationHead(
-                self.features[num_downsampling - 1 - i], num_classes, region_based_training
+                self.features[num_downsampling - 1 - i],
+                num_classes,
+                region_based_training,
             )
 
-    def forward(self, x: torch.Tensor) -> List[torch.Tensor]:
+    def forward(self, x: torch.Tensor) -> list[torch.Tensor]:
+        """Returns a list of segmentation outputs, ordered from lowest to
+        highest resolution among the active deep-supervision heads, with
+        the last element always the full-resolution main output. If
+        `deep_supervision` is False, returns a single-element list."""
         skips = []
         for stage in self.encoder_stages:
             x = stage(x)

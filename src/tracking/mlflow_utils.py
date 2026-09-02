@@ -2,22 +2,23 @@
 routes through _init_dagshub_if_enabled() here — a no-op placeholder
 until Phase 5 actually implements it.
 """
+
 import dataclasses
 from contextlib import contextmanager
-from typing import Dict
 
 import mlflow
 from omegaconf import DictConfig, OmegaConf
 
 from src.logging_utils.setup import get_logger
 
-
 logger = get_logger(__name__)
 
 
 def _init_dagshub_if_enabled(logging_cfg) -> None:
     if getattr(logging_cfg, "use_dagshub", False):
-        logger.info("use_dagshub=True, but DagsHub integration isn't implemented until Phase 5 — tracking locally for now.")
+        logger.info(
+            "use_dagshub=True, but DagsHub integration isn't implemented until Phase 5 — tracking locally for now."
+        )
 
 
 def init_mlflow(logging_cfg) -> None:
@@ -26,13 +27,13 @@ def init_mlflow(logging_cfg) -> None:
     mlflow.set_experiment(experiment_name)
 
 
-def _flatten_cfg(cfg, parent_key: str = "", sep: str = ".") -> Dict[str, object]:
+def _flatten_cfg(cfg, parent_key: str = "", sep: str = ".") -> dict[str, object]:
     if dataclasses.is_dataclass(cfg) and not isinstance(cfg, type):
         cfg = dataclasses.asdict(cfg)
     elif isinstance(cfg, DictConfig):
         cfg = OmegaConf.to_container(cfg, resolve=True)
 
-    items: Dict[str, object] = {}
+    items: dict[str, object] = {}
     if isinstance(cfg, dict):
         for k, v in cfg.items():
             new_key = f"{parent_key}{sep}{k}" if parent_key else str(k)
@@ -50,7 +51,7 @@ def tracked_run(cfg, run_name: str):
         yield run
 
 
-def log_epoch_metrics(metrics: Dict[str, float], step: int) -> None:
+def log_epoch_metrics(metrics: dict[str, float], step: int) -> None:
     mlflow.log_metrics(metrics, step=step)
 
 
