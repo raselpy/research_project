@@ -1,0 +1,11 @@
+services:
+  train:
+    build: .
+    image: research_project:latest
+    volumes:
+      - ./data:/app/data
+      - ./results:/app/results
+      - ./configs:/app/configs
+      - ./logs:/app/logs
+    env_file:
+      - .env

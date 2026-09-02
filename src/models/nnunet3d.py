@@ -54,7 +54,7 @@ class NNUNet3D(nn.Module):
         self,
         patch_size: List[int] = (128, 128, 128),
         in_channels: int = 4,
-        num_classes: int = 3,
+        num_classes: int = 4,
         base_num_features: int = 32,
         max_num_features: int = 320,
         num_downsampling: int = 5,

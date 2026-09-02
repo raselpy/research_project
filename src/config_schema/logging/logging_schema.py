@@ -7,7 +7,7 @@ class LoggingConfig:
     level: str = "INFO"
     log_dir: str = "logs"
     mlflow_experiment_name: str = "brats_nnunet"
-    use_dagshub: bool = True
+    use_dagshub: bool = False
 
 
 def setup_config() -> None:
