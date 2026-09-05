@@ -27,3 +27,9 @@ results/checkpoints/
 Thumbs.db
 
 logs/
+
+.coverage
+
+.idea/
+
+mlflow.db

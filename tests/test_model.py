@@ -42,6 +42,19 @@ def test_bottleneck_collapse_guard_raises():
         NNUNet3D(patch_size=(32, 32, 32), num_downsampling=5)  # collapses to bottleneck size 1
 
 
+def test_empty_deep_supervision_heads_guard_raises():
+    """Regression test for the Phase 8 bug: num_downsampling < 3 produces
+    zero deep-supervision heads (heads exist for decoder indices
+    range(2, num_downsampling), empty below 3). Without this guard, the
+    real failure only surfaced four call-frames deep inside
+    DeepSupervisionWrapper as a confusing IndexError on an empty preds
+    list, discovered via an actual Phase 8 CV smoke-test run."""
+    import pytest
+
+    with pytest.raises(ValueError):
+        NNUNet3D(num_downsampling=2)
+
+
 def test_num_classes_matches_prepare_py_label_scheme():
     """Regression test for the Phase 6 bug: Nnunet3DModelSchema's default
     num_classes silently drifted out of sync with the actual number of
