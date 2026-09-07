@@ -152,11 +152,13 @@ class Trainer:
     poly LR schedule (Section 2.2)."""
 
     def __init__(self, cfg: DictConfig):
+
+
         self.cfg = cfg
         self.device = torch.device(cfg.training.device if torch.cuda.is_available() else "cpu")
+        self.scaler = torch.cuda.amp.GradScaler(enabled=(self.device.type == "cuda"))
         if cfg.training.device == "cuda" and self.device.type == "cpu":
             logger.warning("cfg.training.device='cuda' but no GPU available — falling back to CPU.")
-
         self.model = hydra.utils.instantiate(cfg.model, _convert_="partial").to(self.device)
         base_loss = build_loss(cfg.training, cfg.model)
         self.deep_supervision = cfg.model.deep_supervision
@@ -217,11 +219,20 @@ class Trainer:
                     )
                     data, seg = data.to(self.device), seg.to(self.device)
 
+                    # self.optimizer.zero_grad()
+                    # preds = self.model(data)
+                    # loss = self.loss_fn(preds, seg) if self.deep_supervision else self.loss_fn(preds[0], seg)
+                    # loss.backward()
+                    # self.optimizer.step()
+                    # epoch_losses.append(loss.item())
+
                     self.optimizer.zero_grad()
-                    preds = self.model(data)
-                    loss = self.loss_fn(preds, seg) if self.deep_supervision else self.loss_fn(preds[0], seg)
-                    loss.backward()
-                    self.optimizer.step()
+                    with torch.autocast(device_type=self.device.type, enabled=(self.device.type == "cuda")):
+                        preds = self.model(data)
+                        loss = self.loss_fn(preds, seg) if self.deep_supervision else self.loss_fn(preds[0], seg)
+                    self.scaler.scale(loss).backward()
+                    self.scaler.step(self.optimizer)
+                    self.scaler.update()
                     epoch_losses.append(loss.item())
 
                 mean_loss = float(np.mean(epoch_losses))
