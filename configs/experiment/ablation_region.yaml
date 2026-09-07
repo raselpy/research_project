@@ -1,0 +1,19 @@
+# @package _global_
+# BL*+R — region-based training (Section 2.3): sigmoid over the 3
+# overlapping BraTS regions (WT/TC/ET) instead of softmax over 4
+# mutually-exclusive classes.
+#
+# num_classes=3 is NOT in the plan's own original snippet for this
+# variant, but is required — omitting it would leave the schema's
+# num_classes=4 default (correct for the softmax/BL path) in place,
+# and crash the instant this config actually runs: this is exactly
+# the same "Class values must be smaller than num_classes" bug found
+# and fixed in Phase 6, recurring here if left unguarded. Every
+# variant below that sets region_based_training=true carries this
+# same override for the same reason.
+training:
+  batch_size: 5
+  loss_type: dice_bce
+model:
+  region_based_training: true
+  num_classes: 3

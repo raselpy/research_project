@@ -1,0 +1,11 @@
+# @package _global_
+# BL*+R+DA — region-based training + more aggressive augmentation
+# (Section 2.4: elastic deformation, per-axis scaling, brightness,
+# aggressive gamma — see src/training/augmentation.py's "DA" preset).
+training:
+  batch_size: 5
+  loss_type: dice_bce
+  augmentation_preset: DA
+model:
+  region_based_training: true
+  num_classes: 3

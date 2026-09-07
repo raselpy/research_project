@@ -1,0 +1,11 @@
+# @package _global_
+# BL*+R+DA+BN — DA, with BatchNorm3d in place of InstanceNorm3d
+# (Section 2.4's BN ablation).
+training:
+  batch_size: 5
+  loss_type: dice_bce
+  augmentation_preset: DA
+model:
+  region_based_training: true
+  num_classes: 3
+  norm_type: batch

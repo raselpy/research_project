@@ -1,0 +1,12 @@
+# @package _global_
+# BL*+R+DA+BD — DA, with batch Dice (whole minibatch treated as one
+# large sample for the Dice loss) instead of sample Dice — Section
+# 2.4's BD ablation.
+training:
+  batch_size: 5
+  loss_type: dice_bce
+  augmentation_preset: DA
+model:
+  region_based_training: true
+  num_classes: 3
+  batch_dice: true
