@@ -156,7 +156,8 @@ class Trainer:
 
         self.cfg = cfg
         self.device = torch.device(cfg.training.device if torch.cuda.is_available() else "cpu")
-        self.scaler = torch.cuda.amp.GradScaler(enabled=(self.device.type == "cuda"))
+        # self.scaler = torch.cuda.amp.GradScaler(enabled=(self.device.type == "cuda"))
+        self.scaler = torch.amp.GradScaler("cuda", enabled=(self.device.type == "cuda"))
         if cfg.training.device == "cuda" and self.device.type == "cpu":
             logger.warning("cfg.training.device='cuda' but no GPU available — falling back to CPU.")
         self.model = hydra.utils.instantiate(cfg.model, _convert_="partial").to(self.device)
