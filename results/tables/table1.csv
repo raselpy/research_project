@@ -1,0 +1,9 @@
+Model,Whole,Core,Enh,Mean,n_cases
+baseline,2.92,23.89,24.44,17.08,180
+baseline_bs5,3.59,18.89,19.45,13.98,180
+ablation_region,7.47,1.17,0.98,3.21,180
+ablation_dataug,7.76,0.97,1.23,3.32,180
+ablation_dataug_star,7.3,1.33,0.96,3.2,180
+ablation_batchnorm,7.97,0.57,0.83,3.13,180
+ablation_batchdice,7.46,1.11,0.5,3.02,180
+ablation_dataug_star_bn,7.68,1.17,0.74,3.2,180

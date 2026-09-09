@@ -1,7 +1,14 @@
 """Ensembling across CV folds. Matches the paper's own description
-exactly (Section 3.2): "ensembling was implemented by first predicting
-the test cases individually with each configuration, followed by
-averaging the sigmoid outputs to obtain the final prediction."
+(Section 3.2): "ensembling was implemented by first predicting the test
+cases individually with each configuration, followed by averaging the
+sigmoid outputs to obtain the final prediction" — for the region-based
+(sigmoid) variants. For softmax-mode variants (BL, BL*), this uses the
+standard nnU-Net/soft-voting equivalent: averaging the per-class softmax
+probabilities across models before argmax. Both are the same operation
+(elementwise average of K models' probability-valued outputs) and both
+compose correctly with pred_to_regions(), which already branches on
+region_based_training to interpret the averaged tensor correctly either
+way — there was never a real reason to reject softmax mode here.
 
 Two fixes relative to the plan's original snippet, both found by
 actually trying to run it against this project's real architecture:
@@ -14,6 +21,17 @@ actually trying to run it against this project's real architecture:
      internally (Phase 1) — forward() returns probabilities, never raw
      logits. Re-applying torch.sigmoid() here would double-apply the
      nonlinearity. No extra nonlinearity is applied in this file.
+
+A third issue found via a real Phase 9 run: this function originally
+raised ValueError for non-region-based (softmax) models, on the
+reasoning that "averaging mutually-exclusive-class probabilities isn't
+the same operation as averaging independent per-region probabilities."
+That's true in the sense that the numbers mean something different, but
+it doesn't make averaging softmax probabilities invalid — it's the
+standard ensembling method nnU-Net itself uses, and pred_to_regions()
+already interprets the result correctly for either mode. The
+restriction blocked 2 of 8 real ablation variants (baseline,
+baseline_bs5) from ever getting a Table 2 result at all. Removed.
 """
 
 from pathlib import Path
@@ -31,24 +49,12 @@ def ensemble_predict(
     probabilities. Uses only the final (full-resolution) output from
     each model's deep-supervision output list.
 
-    Requires cfg.model.region_based_training=True: the paper's
-    ensembling method averages independent per-region sigmoid
-    probabilities. Softmax-mode models produce probabilities over
-    mutually exclusive classes instead — naively averaging those isn't
-    the same operation and isn't what the paper describes, so this
-    raises rather than silently producing a result that looks
-    reasonable but isn't what was asked for.
+    Works for both region-based (sigmoid) and softmax-mode models —
+    averaging probability-valued outputs elementwise is the same
+    operation either way, and the caller's pred_to_regions() already
+    interprets the averaged tensor correctly depending on
+    cfg.model.region_based_training.
     """
-    if not cfg.model.region_based_training:
-        raise ValueError(
-            "ensemble_predict requires cfg.model.region_based_training=True — "
-            "the paper's ensembling method averages independent per-region "
-            "sigmoid probabilities, not softmax outputs over mutually "
-            "exclusive classes. Use the region-based (R) ablation's "
-            "checkpoints for ensembling, or evaluate softmax-mode models "
-            "individually instead."
-        )
-
     total: torch.Tensor | None = None
     for ckpt_path in checkpoint_paths:
         model = hydra.utils.instantiate(cfg.model, _convert_="partial").to(device)

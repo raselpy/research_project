@@ -153,7 +153,6 @@ class Trainer:
 
     def __init__(self, cfg: DictConfig):
 
-
         self.cfg = cfg
         self.device = torch.device(cfg.training.device if torch.cuda.is_available() else "cpu")
         # self.scaler = torch.cuda.amp.GradScaler(enabled=(self.device.type == "cuda"))
