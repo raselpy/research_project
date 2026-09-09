@@ -1,6 +1,6 @@
-"""MLflow experiment tracking plumbing. DagsHub integration (Phase 5)
-routes through _init_dagshub_if_enabled() here — a no-op placeholder
-until Phase 5 actually implements it.
+"""MLflow experiment tracking plumbing. DagsHub integration (Phase 5,
+src.tracking.dagshub_utils.init_dagshub) routes through init_mlflow()
+here whenever logging_cfg.use_dagshub is set.
 """
 
 import dataclasses
@@ -14,20 +14,21 @@ from src.logging_utils.setup import get_logger
 logger = get_logger(__name__)
 
 
-def _init_dagshub_if_enabled(logging_cfg) -> None:
-    if getattr(logging_cfg, "use_dagshub", False):
-        logger.info(
-            "use_dagshub=True, but DagsHub integration isn't implemented until Phase 5 — tracking locally for now."
-        )
-
-
 def init_mlflow(logging_cfg) -> None:
-    _init_dagshub_if_enabled(logging_cfg)
+    """Sets the MLflow experiment name from logging_cfg.mlflow_experiment_name.
+    Routes through DagsHub setup first if logging_cfg.use_dagshub is set."""
+    if getattr(logging_cfg, "use_dagshub", False):
+        from src.tracking.dagshub_utils import init_dagshub
+
+        init_dagshub(logging_cfg)
     experiment_name = getattr(logging_cfg, "mlflow_experiment_name", "brats_nnunet")
     mlflow.set_experiment(experiment_name)
 
 
 def _flatten_cfg(cfg, parent_key: str = "", sep: str = ".") -> dict[str, object]:
+    """Flattens a (possibly nested) config object — pydantic dataclass,
+    OmegaConf DictConfig, or plain dict — into a single-level dict of
+    dotted keys, suitable for mlflow.log_params()."""
     if dataclasses.is_dataclass(cfg) and not isinstance(cfg, type):
         cfg = dataclasses.asdict(cfg)
     elif isinstance(cfg, DictConfig):
@@ -45,6 +46,8 @@ def _flatten_cfg(cfg, parent_key: str = "", sep: str = ".") -> dict[str, object]
 
 @contextmanager
 def tracked_run(cfg, run_name: str):
+    """Context manager wrapping mlflow.start_run(). Logs the full
+    flattened cfg as params on entry."""
     with mlflow.start_run(run_name=run_name) as run:
         params = _flatten_cfg(cfg)
         mlflow.log_params({k: v for k, v in params.items() if v is not None})
@@ -60,7 +63,6 @@ def log_artifact_dir(path: str) -> None:
 
 
 if __name__ == "__main__":
-    # from src.config_schema.logging.logging_schema import LoggingConfig
     from src.config_schema.logging.logging_schema import LoggingConfig
 
     logging_cfg = LoggingConfig(mlflow_experiment_name="brats_nnunet_smoke_test", use_dagshub=False)

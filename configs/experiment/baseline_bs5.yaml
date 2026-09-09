@@ -1,0 +1,7 @@
+# @package _global_
+# BL* — batch size ablation (batch_size 2 -> 5). Paper found this
+# performs WORSE than BL alone (Section 4's Discussion) — included
+# here as its own variant specifically to reproduce that comparison,
+# not because it's expected to win.
+training:
+  batch_size: 5

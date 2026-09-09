@@ -1,0 +1,326 @@
+[
+  {
+    "whole_dice": 0.09084780435641723,
+    "whole_hd95": 51.720402163943,
+    "core_dice": 0.0,
+    "core_hd95": 107.72557720256097,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 75.20105813517146,
+    "case_id": "BraTS-GLI-02063-104"
+  },
+  {
+    "whole_dice": 0.2116608055356391,
+    "whole_hd95": 27.27636339397171,
+    "core_dice": 0.16411328817566032,
+    "core_hd95": 27.94637722496424,
+    "enhancing_dice": 0.00028286142618731084,
+    "enhancing_hd95": 33.91164991562634,
+    "case_id": "BraTS-GLI-02066-104"
+  },
+  {
+    "whole_dice": 0.2702124786992202,
+    "whole_hd95": 32.17141588429082,
+    "core_dice": 0.034558490617038674,
+    "core_hd95": 33.15116890850155,
+    "enhancing_dice": 0.0003399120477576427,
+    "enhancing_hd95": 31.559467676119,
+    "case_id": "BraTS-GLI-02066-105"
+  },
+  {
+    "whole_dice": 0.119040135474063,
+    "whole_hd95": 33.76388603226827,
+    "core_dice": 0.026015752247930565,
+    "core_hd95": 44.23177555078079,
+    "enhancing_dice": 7.030618342883256e-05,
+    "enhancing_hd95": 32.79481400437206,
+    "case_id": "BraTS-GLI-02072-102"
+  },
+  {
+    "whole_dice": 0.5565819861431871,
+    "whole_hd95": 58.29622556917883,
+    "core_dice": 0.23071116799579927,
+    "core_hd95": 42.55466765428194,
+    "enhancing_dice": 0.007500323289796974,
+    "enhancing_hd95": 15.256139694787265,
+    "case_id": "BraTS-GLI-02072-104"
+  },
+  {
+    "whole_dice": 0.061583704004478816,
+    "whole_hd95": 30.76198863097898,
+    "core_dice": 0.0,
+    "core_hd95": 373.13,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 373.13,
+    "case_id": "BraTS-GLI-02082-105"
+  },
+  {
+    "whole_dice": 0.18130137919549452,
+    "whole_hd95": 57.113921245174545,
+    "core_dice": 0.007150095709942574,
+    "core_hd95": 73.59789392027245,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 70.73895673530957,
+    "case_id": "BraTS-GLI-02085-104"
+  },
+  {
+    "whole_dice": 0.09113576929668883,
+    "whole_hd95": 56.894639466297704,
+    "core_dice": 0.00011999760004799904,
+    "core_hd95": 86.180622147058,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 82.18028941849325,
+    "case_id": "BraTS-GLI-02085-105"
+  },
+  {
+    "whole_dice": 0.0,
+    "whole_hd95": 86.37244889210207,
+    "core_dice": 0.0,
+    "core_hd95": 373.13,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 373.13,
+    "case_id": "BraTS-GLI-02093-109"
+  },
+  {
+    "whole_dice": 0.022382052541894477,
+    "whole_hd95": 37.389838191679836,
+    "core_dice": 0.00047080979284369113,
+    "core_hd95": 77.42060447980684,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 69.1176220481826,
+    "case_id": "BraTS-GLI-02103-103"
+  },
+  {
+    "whole_dice": 0.00760716732162815,
+    "whole_hd95": 87.46456424431447,
+    "core_dice": 0.0,
+    "core_hd95": 99.167786892207,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 85.84590896094433,
+    "case_id": "BraTS-GLI-02105-103"
+  },
+  {
+    "whole_dice": 0.0027245227076947735,
+    "whole_hd95": 60.315835400000886,
+    "core_dice": 0.004534998356884653,
+    "core_hd95": 60.89498939165427,
+    "enhancing_dice": 0.00021785305811230325,
+    "enhancing_hd95": 22.9128784747792,
+    "case_id": "BraTS-GLI-02105-107"
+  },
+  {
+    "whole_dice": 0.04171316618307169,
+    "whole_hd95": 97.09685872644854,
+    "core_dice": 0.0,
+    "core_hd95": 95.70762740824472,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 59.21051153685975,
+    "case_id": "BraTS-GLI-02111-100"
+  },
+  {
+    "whole_dice": 0.06926836037786346,
+    "whole_hd95": 38.22302970723278,
+    "core_dice": 0.0,
+    "core_hd95": 373.13,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 373.13,
+    "case_id": "BraTS-GLI-02111-104"
+  },
+  {
+    "whole_dice": 0.039216031555962524,
+    "whole_hd95": 33.25657829663178,
+    "core_dice": 0.0,
+    "core_hd95": 96.26577778885041,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 47.54997371187496,
+    "case_id": "BraTS-GLI-02129-102"
+  },
+  {
+    "whole_dice": 0.09688755020080321,
+    "whole_hd95": 27.294688127912362,
+    "core_dice": 0.004707586456635886,
+    "core_hd95": 70.87665105081555,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 72.99416899994621,
+    "case_id": "BraTS-GLI-02129-104"
+  },
+  {
+    "whole_dice": 0.16513713010524092,
+    "whole_hd95": 21.118712081942874,
+    "core_dice": 0.0025008336112037344,
+    "core_hd95": 48.48710182058784,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 26.31349299042963,
+    "case_id": "BraTS-GLI-02129-105"
+  },
+  {
+    "whole_dice": 0.001049282989956863,
+    "whole_hd95": 82.51484694640314,
+    "core_dice": 0.0,
+    "core_hd95": 94.82641720863329,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 43.70011410174911,
+    "case_id": "BraTS-GLI-02152-101"
+  },
+  {
+    "whole_dice": 0.24483751268782136,
+    "whole_hd95": 58.146367040426526,
+    "core_dice": 0.04950273773605989,
+    "core_hd95": 53.15449161420717,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 35.38361202590826,
+    "case_id": "BraTS-GLI-02194-102"
+  },
+  {
+    "whole_dice": 0.05534791004796611,
+    "whole_hd95": 52.583267300539625,
+    "core_dice": 0.0,
+    "core_hd95": 91.00549433962765,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 60.93407115706704,
+    "case_id": "BraTS-GLI-02194-106"
+  },
+  {
+    "whole_dice": 0.3278862612219234,
+    "whole_hd95": 26.90724809414742,
+    "core_dice": 0.025535714285714287,
+    "core_hd95": 47.79278173581524,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 24.06241883103193,
+    "case_id": "BraTS-GLI-02194-107"
+  },
+  {
+    "whole_dice": 0.0031449013287208113,
+    "whole_hd95": 72.61026043177779,
+    "core_dice": 0.0,
+    "core_hd95": 373.13,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 373.13,
+    "case_id": "BraTS-GLI-02199-102"
+  },
+  {
+    "whole_dice": 0.00327586370134727,
+    "whole_hd95": 60.13152230821815,
+    "core_dice": 0.0,
+    "core_hd95": 373.13,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 373.13,
+    "case_id": "BraTS-GLI-02204-102"
+  },
+  {
+    "whole_dice": 0.0022946954813359527,
+    "whole_hd95": 109.67679791095289,
+    "core_dice": 0.0,
+    "core_hd95": 122.31925277304988,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 117.32475474908635,
+    "case_id": "BraTS-GLI-02205-103"
+  },
+  {
+    "whole_dice": 0.002753249818088851,
+    "whole_hd95": 71.50419553488639,
+    "core_dice": 0.0,
+    "core_hd95": 92.87545234613192,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 79.19815023310436,
+    "case_id": "BraTS-GLI-02205-105"
+  },
+  {
+    "whole_dice": 0.05835212921868017,
+    "whole_hd95": 40.092385843365925,
+    "core_dice": 0.0,
+    "core_hd95": 373.13,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 373.13,
+    "case_id": "BraTS-GLI-02209-101"
+  },
+  {
+    "whole_dice": 0.005257871306159398,
+    "whole_hd95": 67.38694235532579,
+    "core_dice": 0.0,
+    "core_hd95": 104.60660304675919,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 75.94602452872792,
+    "case_id": "BraTS-GLI-02209-103"
+  },
+  {
+    "whole_dice": 0.34908052940149703,
+    "whole_hd95": 21.118712081942874,
+    "core_dice": 0.0,
+    "core_hd95": 57.88868564876427,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 58.09474764413123,
+    "case_id": "BraTS-GLI-02242-104"
+  },
+  {
+    "whole_dice": 0.0012895662368112544,
+    "whole_hd95": 54.04627646748664,
+    "core_dice": 0.0,
+    "core_hd95": 373.13,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 373.13,
+    "case_id": "BraTS-GLI-02244-102"
+  },
+  {
+    "whole_dice": 0.0017335766423357665,
+    "whole_hd95": 46.400431032480725,
+    "core_dice": 0.0,
+    "core_hd95": 97.58073580374356,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 94.78074530896517,
+    "case_id": "BraTS-GLI-02244-103"
+  },
+  {
+    "whole_dice": 0.055327844076075786,
+    "whole_hd95": 41.926125235232476,
+    "core_dice": 0.0,
+    "core_hd95": 373.13,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 373.13,
+    "case_id": "BraTS-GLI-02245-101"
+  },
+  {
+    "whole_dice": 0.026769301470588234,
+    "whole_hd95": 44.04316041539397,
+    "core_dice": 0.0,
+    "core_hd95": 74.97299453087851,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 68.84255818879893,
+    "case_id": "BraTS-GLI-02245-104"
+  },
+  {
+    "whole_dice": 0.03964829439062118,
+    "whole_hd95": 83.37205726158521,
+    "core_dice": 0.0,
+    "core_hd95": 373.13,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 373.13,
+    "case_id": "BraTS-GLI-02248-101"
+  },
+  {
+    "whole_dice": 0.01618657785235468,
+    "whole_hd95": 46.195237849804386,
+    "core_dice": 0.0,
+    "core_hd95": 52.338322035265435,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 97.71412301433932,
+    "case_id": "BraTS-GLI-02514-104"
+  },
+  {
+    "whole_dice": 0.062248939045944744,
+    "whole_hd95": 51.87484939737175,
+    "core_dice": 0.009935145577480337,
+    "core_hd95": 47.843494855622744,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 30.163719348801596,
+    "case_id": "BraTS-GLI-02608-105"
+  },
+  {
+    "whole_dice": 0.0022784705248767557,
+    "whole_hd95": 38.54023821557445,
+    "core_dice": 0.0076170464245846736,
+    "core_hd95": 28.45434816931454,
+    "enhancing_dice": 0.0,
+    "enhancing_hd95": 39.655390057996236,
+    "case_id": "BraTS-GLI-02609-101"
+  }
+]

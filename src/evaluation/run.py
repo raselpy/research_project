@@ -23,6 +23,7 @@ later.
 import argparse
 import glob
 import json
+import re
 from pathlib import Path
 
 import hydra
@@ -34,7 +35,7 @@ from src.config_schema import setup_config
 from src.evaluation.ensemble import ensemble_predict
 from src.evaluation.metrics import dice_score, hausdorff95
 from src.logging_utils.setup import get_logger
-from src.training.run import _random_crop, load_case_folds
+from src.training.run import _random_crop, load_case_folds, load_holdout_case_ids
 
 logger = get_logger(__name__)
 
@@ -87,18 +88,51 @@ def load_case_crop(case_id: str, processed_dir: Path, patch_size: tuple, rng: np
     return image_crop, seg_crop
 
 
+def _fold_from_checkpoint_path(checkpoint_path: str) -> int:
+    """Parses the fold number from a results/checkpoints/<experiment>/
+    fold_<i>.pt path. Needed so cv_val evaluation scores a checkpoint
+    only against the cases ITS OWN fold held out — not every case in
+    the manifest. Confirmed as a real bug in the original version of
+    this function: it evaluated every fold-0 checkpoint against all
+    ~180 train_pool cases, even though ~140 of those were cases fold 0
+    actually trained on — producing artificially inflated, leaked
+    Dice/HD95 scores rather than genuine validation performance."""
+    match = re.search(r"fold_(\d+)\.pt$", checkpoint_path)
+    if not match:
+        raise ValueError(
+            f"Could not parse a fold number from checkpoint path {checkpoint_path!r} "
+            f"(expected a 'fold_<i>.pt' suffix, as written by src.training.run.Trainer)."
+        )
+    return int(match.group(1))
+
+
 def run_evaluation(
     cfg: DictConfig,
     checkpoint_paths: list[str],
     device: torch.device,
+    split: str,
 ) -> list[dict]:
     processed_dir = Path("data/processed")
-    case_folds = load_case_folds(processed_dir / "manifest.csv")
-    # Evaluate on every case that was SOME fold's held-out val set —
-    # i.e. the full dataset, each case scored by the fold whose
-    # checkpoint(s) held it out. For a single-checkpoint (non-ensemble)
-    # eval, this is just that one fold's held-out cases.
-    eval_case_ids = sorted(case_folds.keys())
+    manifest_path = processed_dir / "manifest.csv"
+
+    if split == "cv_val":
+        # Table 1: this checkpoint's own held-out fold cases only —
+        # never the cases it actually trained on.
+        if len(checkpoint_paths) != 1:
+            raise ValueError("split='cv_val' expects exactly one checkpoint (per-fold evaluation), not an ensemble.")
+        fold = _fold_from_checkpoint_path(checkpoint_paths[0])
+        case_folds = load_case_folds(manifest_path)
+        eval_case_ids = sorted(c for c, f in case_folds.items() if f == fold)
+    elif split == "holdout":
+        # Table 2: the genuine holdout set — no fold's model has ever
+        # trained on any of these cases (Phase 9's gap fix, prepare.py's
+        # assign_holdout_split).
+        eval_case_ids = sorted(load_holdout_case_ids(manifest_path))
+    else:
+        raise ValueError(f"split must be 'cv_val' or 'holdout', got {split!r}")
+
+    if not eval_case_ids:
+        raise ValueError(f"split={split!r} matched zero cases — check the manifest and checkpoint path.")
 
     rng = np.random.default_rng(cfg.seed)
     results = []
@@ -132,6 +166,14 @@ def main() -> None:
     group.add_argument("--checkpoint", type=str, help="Single checkpoint path")
     group.add_argument("--ensemble", type=str, help="Glob pattern matching multiple checkpoints")
     parser.add_argument("--patch-size", type=int, nargs=3, default=None)
+    parser.add_argument(
+        "--split",
+        type=str,
+        choices=["cv_val", "holdout"],
+        default=None,
+        help="'cv_val' (default with --checkpoint): this checkpoint's own held-out fold cases (Table 1). "
+        "'holdout' (default with --ensemble): the genuine holdout set no fold trained on (Table 2).",
+    )
     args, overrides = parser.parse_known_args()
 
     from hydra import compose, initialize_config_dir
@@ -149,16 +191,31 @@ def main() -> None:
     if not checkpoint_paths:
         raise FileNotFoundError(f"No checkpoints matched: {args.ensemble}")
 
-    device = torch.device(cfg.training.device if torch.cuda.is_available() else "cpu")
-    results = run_evaluation(cfg, checkpoint_paths, device)
+    # Default split: cv_val for a single checkpoint (Table 1), holdout
+    # for an ensemble (Table 2) — matches Phase 9's own invocation
+    # pattern, but --split can override either way.
+    split = args.split or ("cv_val" if args.checkpoint else "holdout")
 
-    out_dir = Path("results/tables")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    # Namespaced by experiment_name — a fixed "eval_results.json" would
-    # silently overwrite between experiment variants, breaking Phase 8's
-    # own final check (one ranking entry per trained variant) and Phase
-    # 9's multi-variant comparison before either got a chance to run.
-    out_path = out_dir / f"eval_results_{cfg.experiment_name}.json"
+    device = torch.device(cfg.training.device if torch.cuda.is_available() else "cpu")
+    results = run_evaluation(cfg, checkpoint_paths, device, split)
+
+    if split == "cv_val":
+        # One file per (experiment, fold) — a bare "eval_results_<experiment>.json"
+        # would silently overwrite between the 5 folds of the same variant,
+        # losing 4 of 5 fold results. Kept in its own subdirectory so
+        # ranking.py's `eval_results_*.json` glob (Table 3, which ranks
+        # on the *ensembled* holdout result per variant, matching the
+        # paper's own approach) doesn't sweep up 40 per-fold files
+        # alongside the 8 it actually wants.
+        fold = _fold_from_checkpoint_path(checkpoint_paths[0])
+        out_dir = Path("results/tables/cv_val")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / f"eval_results_{cfg.experiment_name}_fold{fold}.json"
+    else:
+        out_dir = Path("results/tables")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / f"eval_results_{cfg.experiment_name}.json"
+
     with open(out_path, "w") as f:
         json.dump(results, f, indent=2)
     logger.info(f"Wrote {len(results)} case result(s) to {out_path}")

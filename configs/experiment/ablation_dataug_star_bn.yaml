@@ -1,0 +1,13 @@
+# @package _global_
+# BL*+R+DA*+BN — DA*, with BatchNorm3d instead of InstanceNorm3d.
+# The paper's best single configuration on its real validation set
+# (Table 3, rank 1) — worth reproducing carefully, though our reduced
+# training schedule (Phase 8/9) means this ranking may not hold here.
+training:
+  batch_size: 5
+  loss_type: dice_bce
+  augmentation_preset: DA_star
+model:
+  region_based_training: true
+  num_classes: 3
+  norm_type: batch

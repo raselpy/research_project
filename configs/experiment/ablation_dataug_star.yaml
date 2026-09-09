@@ -1,0 +1,11 @@
+# @package _global_
+# BL*+R+DA* — DA, but brightness augmentation applied per-channel
+# (each MRI modality independently, p=0.5 each) rather than
+# per-sample/globally — see src/training/augmentation.py's "DA_star" preset.
+training:
+  batch_size: 5
+  loss_type: dice_bce
+  augmentation_preset: DA_star
+model:
+  region_based_training: true
+  num_classes: 3
