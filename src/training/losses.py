@@ -105,9 +105,7 @@ class DiceBCELoss(nn.Module):
         target_regions = labels_to_regions(target)
         pred_clamped = pred.clamp(min=EPS, max=1.0 - EPS)
         with torch.autocast(device_type=pred.device.type, enabled=False):
-            bce_loss = torch.nn.functional.binary_cross_entropy(
-                pred_clamped.float(), target_regions.float()
-            )
+            bce_loss = torch.nn.functional.binary_cross_entropy(pred_clamped.float(), target_regions.float())
         return dice_loss + bce_loss
 
 
