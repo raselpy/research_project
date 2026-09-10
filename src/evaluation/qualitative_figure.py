@@ -191,9 +191,10 @@ def pick_display_coords(seg_class_map: np.ndarray) -> tuple[int, int, int]:
     happen for cases selected by whole_dice, but avoids a NaN coordinate)."""
     tumor_voxels = np.argwhere(seg_class_map > 0)
     if len(tumor_voxels) == 0:
-        return tuple(s // 2 for s in seg_class_map.shape)
+        d0, d1, d2 = seg_class_map.shape
+        return d0 // 2, d1 // 2, d2 // 2
     centroid = tumor_voxels.mean(axis=0)
-    return tuple(int(round(c)) for c in centroid)
+    return int(centroid[0].round()), int(centroid[1].round()), int(centroid[2].round())
 
 
 def select_percentile_cases(eval_results_path: Path) -> list[dict]:
