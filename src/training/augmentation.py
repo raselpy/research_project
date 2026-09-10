@@ -6,8 +6,16 @@ brightness instead of per-sample).
 """
 
 from batchgenerators.transforms.abstract_transforms import Compose
-from batchgenerators.transforms.color_transforms import BrightnessTransform, GammaTransform
-from batchgenerators.transforms.spatial_transforms import SpatialTransform
+from batchgenerators.transforms.color_transforms import (
+    BrightnessMultiplicativeTransform,
+    BrightnessTransform,
+    ContrastAugmentationTransform,
+    GammaTransform,
+)
+from batchgenerators.transforms.noise_transforms import GaussianBlurTransform, GaussianNoiseTransform
+from batchgenerators.transforms.resample_transforms import SimulateLowResolutionTransform
+from batchgenerators.transforms.spatial_transforms import MirrorTransform, SpatialTransform
+from batchgenerators.transforms.utility_transforms import NumpyToTensor
 
 
 def build_augmentation(preset: str, patch_size=None) -> Compose:
@@ -51,6 +59,75 @@ def build_augmentation(preset: str, patch_size=None) -> Compose:
         transforms.append(GammaTransform(gamma_range=(0.6, 1.6), p_per_sample=0.3))
 
     return Compose(transforms)
+
+
+def get_train_transforms(patch_size=(128, 128, 128)) -> Compose:
+    """Generic nnU-Net augmentation pipeline reproduction (BUILD_PLANNER_augmentation_nnunet.md).
+
+    Distinct from build_augmentation()'s baseline/DA/DA_star presets used in
+    the ablation study — this reproduces nnU-Net's full default_3D_augmentation_params
+    pipeline as a fixed-parameter baseline reference, not an ablation arm.
+    Verify probabilities/ranges against your installed nnunet/nnunetv2 package
+    before citing them in a methods section.
+    """
+    return Compose(
+        [
+            SpatialTransform(
+                patch_size,
+                do_elastic_deform=True,
+                alpha=(0.0, 900.0),
+                sigma=(9.0, 13.0),
+                do_rotation=True,
+                angle_x=(-0.5236, 0.5236),
+                angle_y=(-0.5236, 0.5236),
+                angle_z=(-0.5236, 0.5236),
+                do_scale=True,
+                scale=(0.7, 1.4),
+                random_crop=True,
+                p_el_per_sample=0.2,
+                p_rot_per_sample=0.2,
+                p_scale_per_sample=0.2,
+            ),
+            GaussianNoiseTransform(p_per_sample=0.1),
+            GaussianBlurTransform(
+                blur_sigma=(0.5, 1.5),
+                different_sigma_per_channel=True,
+                p_per_sample=0.2,
+                p_per_channel=0.5,
+            ),
+            BrightnessMultiplicativeTransform(
+                multiplier_range=(0.75, 1.25),
+                per_channel=True,
+                p_per_sample=0.15,
+            ),
+            ContrastAugmentationTransform(
+                contrast_range=(0.65, 1.5),
+                preserve_range=True,
+                per_channel=True,
+                p_per_sample=0.15,
+            ),
+            SimulateLowResolutionTransform(
+                zoom_range=(0.5, 1.0),
+                per_channel=True,
+                p_per_sample=0.25,
+                p_per_channel=0.5,
+            ),
+            GammaTransform(
+                gamma_range=(0.7, 1.5),
+                invert_image=True,
+                per_channel=True,
+                p_per_sample=0.1,
+            ),
+            GammaTransform(
+                gamma_range=(0.7, 1.5),
+                invert_image=False,
+                per_channel=True,
+                p_per_sample=0.3,
+            ),
+            MirrorTransform(axes=(0, 1, 2)),
+            NumpyToTensor(),
+        ]
+    )
 
 
 if __name__ == "__main__":
