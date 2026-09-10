@@ -16,6 +16,7 @@ dependencies = [
     "scikit-learn",    # deterministic KFold splitting (Phase 8, 8.1) + LogisticRegression (Phase 10, 10.3)
     "pandas",          # per-case score tables + ranking (Phase 8, 8.3)
     "scipy",           # Spearman correlation for rank stability (Phase 11, 11.1)
+    "scikit-image",    # marching cubes for the 3D segmentation render in qualitative_figure.py
 ]
 
 [project.optional-dependencies]
