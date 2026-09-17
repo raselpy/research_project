@@ -242,13 +242,22 @@ class Trainer:
     def _prune_old_resume_checkpoints(self, checkpoint_dir: Path, keep: Path | None) -> None:
         """Deletes every resume checkpoint for this fold except `keep`
         (or all of them, if keep is None e.g. after the fold finishes).
-        Run only after the new checkpoint is safely on disk, so a crash
-        between writing the new one and pruning the old one just leaves
-        an extra file around — never a gap with no valid resume point."""
+        Retries on PermissionError for the same Windows file-locking
+        reason _atomic_torch_save does (antivirus/OneDrive/IDE indexer
+        can transiently hold a handle right after a file is written)."""
         pattern = f"fold_{self.cfg.dataset.fold}_resume_epoch*.pt"
         for old in checkpoint_dir.glob(pattern):
-            if old != keep:
-                old.unlink(missing_ok=True)
+            if old == keep:
+                continue
+            for attempt in range(5):
+                try:
+                    old.unlink(missing_ok=True)
+                    break
+                except PermissionError:
+                    if attempt == 4:
+                        logger.warning(f"Could not delete stale checkpoint {old} (file locked) — leaving it in place.")
+                    else:
+                        time.sleep(0.5)
 
     def train(self) -> None:
         # Phase 8: one subdirectory per experiment, one checkpoint file
