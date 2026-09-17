@@ -556,8 +556,8 @@ Examples:
 
 import argparse
 import json
-from pathlib import Path
 import typing
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
