@@ -32,6 +32,8 @@ the installed `train` console-script inside Docker).
 """
 
 import csv
+import os
+import time
 from pathlib import Path
 
 import hydra
@@ -51,6 +53,33 @@ logger = get_logger(__name__)
 # config on module load / first call — doing this inside main() would be
 # too late, since cfg arrives already composed by then.
 setup_config()
+
+
+def _atomic_torch_save(obj, final_path: Path, retries: int = 5, delay: float = 0.5) -> None:
+    """Writes obj to a process-unique temp file then atomically renames
+    it onto final_path, so a crash mid-write never leaves a truncated
+    checkpoint at final_path (torch.save alone is not atomic).
+
+    The rename is retried on PermissionError: on Windows, MoveFileEx
+    can't overwrite a target that another process briefly has open
+    (antivirus scanning, OneDrive sync, PyCharm's indexer/watcher can
+    all do this), which raises WinError 5 even though the file is
+    about to be free again. In train() we no longer call this
+    repeatedly against the *same* final_path every epoch (that pattern
+    is what invited another process to keep grabbing a handle on it) —
+    each epoch now gets its own uniquely-named resume file, so this
+    retry is a safety net for a first-time write, not the primary
+    fix for the lock contention."""
+    tmp_path = final_path.with_suffix(final_path.suffix + f".{os.getpid()}.tmp")
+    torch.save(obj, tmp_path)
+    for attempt in range(retries):
+        try:
+            os.replace(tmp_path, final_path)
+            return
+        except PermissionError:
+            if attempt == retries - 1:
+                raise
+            time.sleep(delay)
 
 
 def load_case_folds(manifest_path: Path) -> dict[str, int]:
@@ -155,7 +184,6 @@ class Trainer:
 
         self.cfg = cfg
         self.device = torch.device(cfg.training.device if torch.cuda.is_available() else "cpu")
-        # self.scaler = torch.cuda.amp.GradScaler(enabled=(self.device.type == "cuda"))
         self.scaler = torch.amp.GradScaler("cuda", enabled=(self.device.type == "cuda"))
         if cfg.training.device == "cuda" and self.device.type == "cpu":
             logger.warning("cfg.training.device='cuda' but no GPU available — falling back to CPU.")
@@ -193,15 +221,60 @@ class Trainer:
         progress = epoch / max(self.cfg.training.epochs, 1)
         return self.cfg.training.learning_rate * (1 - progress) ** self.cfg.training.lr_poly_exponent
 
+    def _find_latest_resume_checkpoint(self, checkpoint_dir: Path) -> Path | None:
+        """Resume checkpoints are now written one-per-epoch as
+        fold_<i>_resume_epoch<N>.pt rather than repeatedly overwriting a
+        single fixed filename. Overwriting one fixed path every epoch was
+        what caused WinError 5 (PermissionError) on Windows: some other
+        process (antivirus, OneDrive, PyCharm's indexer/watcher) would
+        transiently hold a handle on that exact path right after it was
+        written, and os.replace can't rename onto a path that's locked.
+        Writing a fresh, uniquely-named file each epoch sidesteps that —
+        nothing is ever asked to replace a file another process might
+        currently have open. We just need to find the highest-epoch one
+        to resume from."""
+        pattern = f"fold_{self.cfg.dataset.fold}_resume_epoch*.pt"
+        candidates = list(checkpoint_dir.glob(pattern))
+        if not candidates:
+            return None
+        return max(candidates, key=lambda p: int(p.stem.rsplit("epoch", 1)[-1]))
+
+    def _prune_old_resume_checkpoints(self, checkpoint_dir: Path, keep: Path | None) -> None:
+        """Deletes every resume checkpoint for this fold except `keep`
+        (or all of them, if keep is None e.g. after the fold finishes).
+        Run only after the new checkpoint is safely on disk, so a crash
+        between writing the new one and pruning the old one just leaves
+        an extra file around — never a gap with no valid resume point."""
+        pattern = f"fold_{self.cfg.dataset.fold}_resume_epoch*.pt"
+        for old in checkpoint_dir.glob(pattern):
+            if old != keep:
+                old.unlink(missing_ok=True)
+
     def train(self) -> None:
         # Phase 8: one subdirectory per experiment, one checkpoint file
         # per fold — cv.py's run_all_folds() launches 5 of these,
         # producing results/checkpoints/<experiment_name>/fold_<i>.pt.
         checkpoint_dir = Path("results/checkpoints") / str(self.cfg.experiment_name)
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        final_checkpoint_path = checkpoint_dir / f"fold_{self.cfg.dataset.fold}.pt"
+
+        # If a power cut (or any crash) interrupted this fold mid-training,
+        # pick up from the last epoch we finished instead of epoch 0.
+        start_epoch = 0
+        latest_resume_path = self._find_latest_resume_checkpoint(checkpoint_dir)
+        if latest_resume_path is not None:
+            ckpt = torch.load(latest_resume_path, map_location=self.device)
+            self.model.load_state_dict(ckpt["model_state_dict"])
+            self.optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+            self.scaler.load_state_dict(ckpt["scaler_state_dict"])
+            start_epoch = ckpt["epoch"] + 1
+            logger.info(
+                f"Resuming fold {self.cfg.dataset.fold} from epoch {start_epoch} "
+                f"(found {latest_resume_path})"
+            )
 
         with tracked_run(self.cfg, run_name=self.cfg.experiment_name):
-            for epoch in range(self.cfg.training.epochs):
+            for epoch in range(start_epoch, self.cfg.training.epochs):
                 lr = self._lr_at_epoch(epoch)
                 for g in self.optimizer.param_groups:
                     g["lr"] = lr
@@ -219,13 +292,6 @@ class Trainer:
                     )
                     data, seg = data.to(self.device), seg.to(self.device)
 
-                    # self.optimizer.zero_grad()
-                    # preds = self.model(data)
-                    # loss = self.loss_fn(preds, seg) if self.deep_supervision else self.loss_fn(preds[0], seg)
-                    # loss.backward()
-                    # self.optimizer.step()
-                    # epoch_losses.append(loss.item())
-
                     self.optimizer.zero_grad()
                     with torch.autocast(device_type=self.device.type, enabled=(self.device.type == "cuda")):
                         preds = self.model(data)
@@ -239,9 +305,30 @@ class Trainer:
                 logger.info(f"epoch {epoch}: lr={lr:.5f}, train_loss={mean_loss:.4f}")
                 log_epoch_metrics({"train_loss": mean_loss, "lr": lr}, step=epoch)
 
-            checkpoint_path = checkpoint_dir / f"fold_{self.cfg.dataset.fold}.pt"
-            torch.save(self.model.state_dict(), checkpoint_path)
-            logger.info(f"Saved checkpoint to {checkpoint_path}")
+                # Save a resumable checkpoint after every epoch, so a power
+                # cut only costs the in-progress epoch, not the whole fold.
+                # Each epoch gets its own uniquely-numbered file (see
+                # _find_latest_resume_checkpoint's docstring for why), and
+                # older resume files for this fold are pruned only after
+                # the new one is confirmed written.
+                resume_checkpoint_path = checkpoint_dir / f"fold_{self.cfg.dataset.fold}_resume_epoch{epoch}.pt"
+                _atomic_torch_save(
+                    {
+                        "epoch": epoch,
+                        "model_state_dict": self.model.state_dict(),
+                        "optimizer_state_dict": self.optimizer.state_dict(),
+                        "scaler_state_dict": self.scaler.state_dict(),
+                    },
+                    resume_checkpoint_path,
+                )
+                self._prune_old_resume_checkpoints(checkpoint_dir, keep=resume_checkpoint_path)
+
+            torch.save(self.model.state_dict(), final_checkpoint_path)
+            logger.info(f"Saved checkpoint to {final_checkpoint_path}")
+            # Fold finished cleanly - the resume files' job is done. Remove
+            # them so a later re-run (e.g. different epoch count) doesn't
+            # wrongly think this fold is already fully trained.
+            self._prune_old_resume_checkpoints(checkpoint_dir, keep=None)
 
 
 def main() -> None:
