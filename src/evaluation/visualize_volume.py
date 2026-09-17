@@ -671,9 +671,9 @@ def pick_display_coords(volume: np.ndarray, seg: np.ndarray | None) -> tuple[int
     (brain) region, which for a skull-stripped volume is a far more
     useful default than the center of the padded array."""
     if seg is not None and (seg > 0).any():
-        return tuple(int(round(c)) for c in np.argwhere(seg > 0).mean(axis=0))
+        return tuple(round(c) for c in np.argwhere(seg > 0).mean(axis=0))
     if (volume != 0).any():
-        return tuple(int(round(c)) for c in np.argwhere(volume != 0).mean(axis=0))
+        return tuple(round(c) for c in np.argwhere(volume != 0).mean(axis=0))
     return tuple(s // 2 for s in volume.shape)
 
 

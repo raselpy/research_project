@@ -17,6 +17,7 @@ resolution), so this is the simplest correct way to keep them in sync.
 import argparse
 import subprocess
 import sys
+
 from src.logging_utils.setup import get_logger
 
 logger = get_logger(__name__)
