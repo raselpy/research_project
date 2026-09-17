@@ -16,7 +16,7 @@ resolution), so this is the simplest correct way to keep them in sync.
 
 import argparse
 import subprocess
-
+import sys
 from src.logging_utils.setup import get_logger
 
 logger = get_logger(__name__)
@@ -37,7 +37,7 @@ def run_all_folds(experiment: str, num_folds: int = 5, extra_overrides: list[str
             *extra_overrides,
         ]
         logger.info(f"Fold {fold}/{num_folds - 1}: train {' '.join(overrides)}")
-        subprocess.run(["train", *overrides], check=True)
+        subprocess.run([sys.executable, "-m", "src.training.run", *overrides], check=True)
 
 
 if __name__ == "__main__":
