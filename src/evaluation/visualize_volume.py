@@ -602,7 +602,6 @@ def load_nifti(path: Path) -> tuple[np.ndarray, np.ndarray | None]:
             "(not required when loading this project's processed .npy files)"
         ) from exc
 
-    
     img = typing.cast(nib.Nifti1Image, nib.load(str(path)))
     # get_fdata() applies the header's scl_slope/scl_inter scaling, which
     # raw dataobj access skips — for intensity images that scaling is the
