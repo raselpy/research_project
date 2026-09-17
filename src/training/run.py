@@ -259,8 +259,6 @@ class Trainer:
                     else:
                         time.sleep(0.5)
 
-
-
     def train(self) -> None:
         # Phase 8: one subdirectory per experiment, one checkpoint file
         # per fold — cv.py's run_all_folds() launches 5 of these,
@@ -280,8 +278,7 @@ class Trainer:
             self.scaler.load_state_dict(ckpt["scaler_state_dict"])
             start_epoch = ckpt["epoch"] + 1
             logger.info(
-                f"Resuming fold {self.cfg.dataset.fold} from epoch {start_epoch} "
-                f"(found {latest_resume_path})"
+                f"Resuming fold {self.cfg.dataset.fold} from epoch {start_epoch} " f"(found {latest_resume_path})"
             )
 
         with tracked_run(self.cfg, run_name=self.cfg.experiment_name):

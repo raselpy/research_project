@@ -776,7 +776,9 @@ def export_interactive_3d(class_map: np.ndarray, out_path: Path, smooth_sigma: f
                 "j": faces[:, 1].tolist(),
                 "k": faces[:, 2].tolist(),
                 "color": f"rgb({int(r * 255)},{int(g * 255)},{int(b * 255)})",
-                "opacity": 0.35 if cls == 2 else 0.95,  # ED translucent shell, NCR/ET solid — same reasoning as the static render
+                "opacity": (
+                    0.35 if cls == 2 else 0.95
+                ),  # ED translucent shell, NCR/ET solid — same reasoning as the static render
                 "flatshading": False,
                 "lighting": {"ambient": 0.45, "diffuse": 0.8, "specular": 0.35, "roughness": 0.5, "fresnel": 0.1},
                 "lightposition": {"x": 200, "y": 200, "z": 300},
@@ -833,7 +835,9 @@ def add_legend(fig, seg: np.ndarray) -> None:
     if not present:
         return
     handles = [
-        plt.Line2D([0], [0], marker="s", linestyle="", markersize=8, markerfacecolor=CLASS_COLORS[c], label=CLASS_NAMES[c])
+        plt.Line2D(
+            [0], [0], marker="s", linestyle="", markersize=8, markerfacecolor=CLASS_COLORS[c], label=CLASS_NAMES[c]
+        )
         for c in present
     ]
     fig.legend(handles=handles, loc="lower center", ncol=len(present), fontsize=9, bbox_to_anchor=(0.5, -0.01))
@@ -979,7 +983,9 @@ def main() -> None:
     source.add_argument("--case", nargs="+", help="One or more case IDs to load from the processed data directory")
     source.add_argument("--all-cases", action="store_true", help="Process every case found under --processed-dir")
     parser.add_argument("--seg", help="Optional segmentation (.nii/.nii.gz/.npy) to overlay (single-case --image only)")
-    parser.add_argument("--processed-dir", default="data/processed", help="Processed data root (for --case/--all-cases)")
+    parser.add_argument(
+        "--processed-dir", default="data/processed", help="Processed data root (for --case/--all-cases)"
+    )
     parser.add_argument(
         "--modality",
         default="t2",
@@ -991,8 +997,7 @@ def main() -> None:
     parser.add_argument(
         "--raw-labels",
         action="store_true",
-        help="Treat a .npy segmentation as raw labels (resection cavity=4 -> background) "
-        "(automatic for .nii input)",
+        help="Treat a .npy segmentation as raw labels (resection cavity=4 -> background) " "(automatic for .nii input)",
     )
     parser.add_argument("--out", help="Output image path — single case only")
     parser.add_argument("--out-dir", help="Output directory for batch mode (default: current directory)")
@@ -1029,7 +1034,9 @@ def main() -> None:
             failed.append(case_id)
 
     if batch:
-        print(f"\n{len(succeeded)}/{len(case_ids)} cases written to {out_dir}" + (f"; failed: {failed}" if failed else ""))
+        print(
+            f"\n{len(succeeded)}/{len(case_ids)} cases written to {out_dir}" + (f"; failed: {failed}" if failed else "")
+        )
 
 
 if __name__ == "__main__":
