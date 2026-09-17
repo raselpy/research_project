@@ -557,6 +557,7 @@ Examples:
 import argparse
 import json
 from pathlib import Path
+import typing
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -601,7 +602,8 @@ def load_nifti(path: Path) -> tuple[np.ndarray, np.ndarray | None]:
             "(not required when loading this project's processed .npy files)"
         ) from exc
 
-    img = nib.load(str(path))
+    
+    img = typing.cast(nib.Nifti1Image, nib.load(str(path)))
     # get_fdata() applies the header's scl_slope/scl_inter scaling, which
     # raw dataobj access skips — for intensity images that scaling is the
     # difference between real and garbage values, so don't "optimize" it away.
