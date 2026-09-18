@@ -291,16 +291,6 @@ class Trainer:
         # pick up from the last epoch we finished instead of epoch 0.
         start_epoch = 0
         latest_resume_path = self._find_latest_resume_checkpoint(checkpoint_dir)
-        # if latest_resume_path is not None:
-        #     ckpt = torch.load(latest_resume_path, map_location=self.device)
-        #     self.model.load_state_dict(ckpt["model_state_dict"])
-        #     self.optimizer.load_state_dict(ckpt["optimizer_state_dict"])
-        #     self.scaler.load_state_dict(ckpt["scaler_state_dict"])
-        #     start_epoch = ckpt["epoch"] + 1
-        #     logger.info(
-        #         f"Resuming fold {self.cfg.dataset.fold} from epoch {start_epoch} " f"(found {latest_resume_path})"
-        #     )
-        #
 
         if latest_resume_path is not None:
             ckpt = torch.load(latest_resume_path, map_location=self.device)
@@ -375,7 +365,7 @@ class Trainer:
                 )
                 self._prune_old_resume_checkpoints(checkpoint_dir, keep=resume_checkpoint_path)
 
-            torch.save(self.model.state_dict(), final_checkpoint_path)
+            _atomic_torch_save(self.model.state_dict(), final_checkpoint_path)
             logger.info(f"Saved checkpoint to {final_checkpoint_path}")
             # Fold finished cleanly - the resume files' job is done. Remove
             # them so a later re-run (e.g. different epoch count) doesn't
