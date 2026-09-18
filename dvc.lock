@@ -1,0 +1,21 @@
+schema: '2.0'
+stages:
+  prepare_data:
+    cmd: python -m src.datasets.prepare --path data/raw/BraTS2024_small_dataset
+    deps:
+    - path: configs/dataset/brats2024.yaml
+      hash: md5
+      md5: dfe2cec806475cb7a1d9255eb5793ff1
+      size: 97
+      isexec: true
+    - path: src/datasets/prepare.py
+      hash: md5
+      md5: 527b760b5c502327122235e9961258dc
+      size: 10900
+      isexec: true
+    outs:
+    - path: data/processed
+      hash: md5
+      md5: c2ac8d3088f199fbc0030468682fc800.dir
+      size: 24551588069
+      nfiles: 401

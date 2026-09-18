@@ -1,0 +1,29 @@
+তারপর আসল sweep শুরু করুন:
+
+bash
+./run_experiments.sh
+
+চালু করার পর মনিটর করার জন্য (আরেকটা Git Bash উইন্ডো খুলে):
+
+bash
+cd ~/PycharmProjects/research_project
+tail -f logs/baseline-fold0.log ### experience traing dekhar jonno. log file theke exp log specific
+
+এখানে লাইভ epoch/loss দেখা যাবে।
+
+সার্বিক progress দেখতে:
+
+bash
+./run_experiments.sh --status
+
+পাওয়ার কাট হলে — ফিরে এসে শুধু:
+
+bash
+./run_experiments.sh
+
+পরামর্শ: নিরাপদ থাকতে MAX_PARALLEL=1 করে দিন, যাতে একবারে একটামাত্র fold চলে:
+
+চলমান sweep থামান (Ctrl+C সেই টার্মিনালে), তারপর:
+
+bash
+MAX_PARALLEL=1 ./run_experiments.sh

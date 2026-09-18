@@ -278,6 +278,7 @@ class Trainer:
                         logger.warning(f"Could not delete stale checkpoint {old} (file locked) — leaving it in place.")
                     else:
                         time.sleep(0.5)
+
     def validate(self, epoch: int) -> None:
         """Runs the held-out fold's val_case_ids through the model in
         eval mode (no grad, no augmentation) and logs the mean loss as
