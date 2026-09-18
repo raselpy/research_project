@@ -32,6 +32,7 @@ the installed `train` console-script inside Docker).
 """
 
 import csv
+import hashlib
 import os
 import time
 from pathlib import Path
@@ -80,6 +81,25 @@ def _atomic_torch_save(obj, final_path: Path, retries: int = 5, delay: float = 0
             if attempt == retries - 1:
                 raise
             time.sleep(delay)
+
+
+def _config_fingerprint(cfg) -> str:
+    """Hash of the config fields that must match for a resume checkpoint
+    to be safe to load. Deliberately excludes `logging` (tracking-only,
+    doesn't affect what gets trained) and `experiment_name` (a label).
+    Guards against silently resuming a partially-trained fold under a
+    DIFFERENT config than the one that started it — e.g. Ctrl+C'ing a
+    run, changing training.learning_rate or training.augmentation_preset
+    (neither of which changes the model's tensor shapes, so
+    load_state_dict wouldn't catch it), and re-running the same
+    experiment_name/fold. Without this check that would silently
+    resume the old partial-training state under the new hyperparameters
+    with no warning at all."""
+    from omegaconf import OmegaConf
+
+    relevant = OmegaConf.masked_copy(cfg, ["dataset", "model", "training", "seed"])
+    canonical = OmegaConf.to_yaml(relevant, resolve=True)
+    return hashlib.sha256(canonical.encode()).hexdigest()
 
 
 def load_case_folds(manifest_path: Path) -> dict[str, int]:
@@ -271,8 +291,31 @@ class Trainer:
         # pick up from the last epoch we finished instead of epoch 0.
         start_epoch = 0
         latest_resume_path = self._find_latest_resume_checkpoint(checkpoint_dir)
+        # if latest_resume_path is not None:
+        #     ckpt = torch.load(latest_resume_path, map_location=self.device)
+        #     self.model.load_state_dict(ckpt["model_state_dict"])
+        #     self.optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+        #     self.scaler.load_state_dict(ckpt["scaler_state_dict"])
+        #     start_epoch = ckpt["epoch"] + 1
+        #     logger.info(
+        #         f"Resuming fold {self.cfg.dataset.fold} from epoch {start_epoch} " f"(found {latest_resume_path})"
+        #     )
+        #
+
         if latest_resume_path is not None:
             ckpt = torch.load(latest_resume_path, map_location=self.device)
+
+            current_fingerprint = _config_fingerprint(self.cfg)
+            saved_fingerprint = ckpt.get("config_fingerprint")
+            if saved_fingerprint != current_fingerprint:
+                raise ValueError(
+                    f"{latest_resume_path} was saved under a different config than the one "
+                    f"this run was started with (dataset/model/training/seed differ). Resuming "
+                    f"would silently mix hyperparameters between the old partial run and this "
+                    f"one. Either revert the config change, or delete this fold's stale resume "
+                    f"checkpoints under {latest_resume_path.parent} and start the fold over."
+                )
+
             self.model.load_state_dict(ckpt["model_state_dict"])
             self.optimizer.load_state_dict(ckpt["optimizer_state_dict"])
             self.scaler.load_state_dict(ckpt["scaler_state_dict"])
@@ -326,6 +369,7 @@ class Trainer:
                         "model_state_dict": self.model.state_dict(),
                         "optimizer_state_dict": self.optimizer.state_dict(),
                         "scaler_state_dict": self.scaler.state_dict(),
+                        "config_fingerprint": _config_fingerprint(self.cfg),
                     },
                     resume_checkpoint_path,
                 )
