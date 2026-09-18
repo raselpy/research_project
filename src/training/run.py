@@ -278,6 +278,36 @@ class Trainer:
                         logger.warning(f"Could not delete stale checkpoint {old} (file locked) — leaving it in place.")
                     else:
                         time.sleep(0.5)
+    def validate(self, epoch: int) -> None:
+        """Runs the held-out fold's val_case_ids through the model in
+        eval mode (no grad, no augmentation) and logs the mean loss as
+        val_loss. Reuses self.loss_fn directly, so it's exactly the same
+        Dice+CE/Dice+BCE (with or without deep supervision) that trains
+        the model — a monitoring signal, not a separate metric."""
+        if not self.val_case_ids:
+            return
+
+        self.model.eval()
+        val_losses = []
+        with torch.no_grad():
+            for _ in range(self.cfg.training.iterations_per_epoch):
+                data, seg = load_batch(
+                    self.val_case_ids,
+                    self.processed_dir,
+                    tuple(self.cfg.model.patch_size),
+                    self.cfg.training.batch_size,
+                    None,  # no augmentation at validation time
+                    self.rng,
+                )
+                data, seg = data.to(self.device), seg.to(self.device)
+                with torch.autocast(device_type=self.device.type, enabled=(self.device.type == "cuda")):
+                    preds = self.model(data)
+                    loss = self.loss_fn(preds, seg) if self.deep_supervision else self.loss_fn(preds[0], seg)
+                val_losses.append(loss.item())
+
+        mean_val_loss = float(np.mean(val_losses))
+        logger.info(f"epoch {epoch}: val_loss={mean_val_loss:.4f}")
+        log_epoch_metrics({"val_loss": mean_val_loss}, step=epoch)
 
     def train(self) -> None:
         # Phase 8: one subdirectory per experiment, one checkpoint file
@@ -345,6 +375,10 @@ class Trainer:
                 mean_loss = float(np.mean(epoch_losses))
                 logger.info(f"epoch {epoch}: lr={lr:.5f}, train_loss={mean_loss:.4f}")
                 log_epoch_metrics({"train_loss": mean_loss, "lr": lr}, step=epoch)
+
+                if (epoch + 1) % self.cfg.training.val_every_n_epochs == 0:
+                    self.validate(epoch)
+                    self.model.train()  # switch back to train mode after eval
 
                 # Save a resumable checkpoint after every epoch, so a power
                 # cut only costs the in-progress epoch, not the whole fold.
