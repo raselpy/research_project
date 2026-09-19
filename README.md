@@ -2,17 +2,6 @@
 
 Reproduction of Isensee et al., *[nnU-Net for Brain Tumor Segmentation](https://arxiv.org/abs/2011.00848)* (BraTS 2020 winner), using **BraTS 2024 GLI** NIfTI data.
 
-Work is specified phase-by-phase in [BUILD_PLANNER.md](BUILD_PLANNER.md). This README matches the **implemented** code (Phases 0–9). The thesis extension (Phases 10–11: uncertainty-calibrated, rank-aware postprocessing and rank-stability) is **not implemented**.
-
-## Status
-
-| Phase | What | Status |
-|------:|------|--------|
-| 0–9 | Config, 3D U-Net, losses, data, augmentation, tracking, training, CI, 5-fold CV, ablations, Tables 1–3, qualitative figure | done |
-| 10–11 | Calibrated ET postprocessing + Spearman rank stability | not started |
-
-Sweep runner: `./run_experiments.sh` (resumable per experiment + fold). Monitor with `./run_experiments.sh --status` or `tail -f logs/<exp>-fold<n>.log`. Prefer `MAX_PARALLEL=1` on one GPU.
-
 ## What this repo actually does
 
 - **Model:** `NNUNet3D` (`src/models/nnunet3d.py`) — 4 MRI channels, instance or batch norm, deep-supervision heads, softmax (4 classes) or sigmoid (3 overlapping regions).
